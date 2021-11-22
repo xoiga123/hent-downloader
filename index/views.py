@@ -19,14 +19,34 @@ def download(link):
     name = re.search("manga/(.*?)/", link).group(1)
     soup = BeautifulSoup(html, 'html.parser')
     img_list = []
-    for noscript in soup.find_all("noscript"):
-        img = noscript.find("img")
-        if not img: continue
 
-        link = img["src"]
-        img_list.append(Image.open(BytesIO(scraper.get(link, headers={'referer': "https://hentaicube.net/"}).content)))
+    chapters = soup.find_all("li", {"class": "wp-manga-chapter"})
+    chapter_name = None
+    if len(chapters) != 0:
+        # multi download mode
+        for chapter in chapters[::-1]:
+            link = chapter.find('a')['href']
+            chapter_html = scraper.get(link, headers={'referer': "https://hentaicube.net/"}).content
+            chapter_soup = BeautifulSoup(chapter_html, 'html.parser')
+            for noscript in chapter_soup.find_all("noscript"):
+                img = noscript.find("img")
+                if not img: continue
 
-    pdf_filename = "{}.pdf".format(name)
+                link = img["src"]
+                img_list.append(
+                    Image.open(BytesIO(scraper.get(link, headers={'referer': "https://hentaicube.net/"}).content)))
+    else:
+        # single download mode
+        chapter_name = soup.find("div", {'id': "manga-reading-nav-head"})['data-chapter']
+        for noscript in soup.find_all("noscript"):
+            img = noscript.find("img")
+            if not img: continue
+
+            link = img["src"]
+            img_list.append(
+                Image.open(BytesIO(scraper.get(link, headers={'referer': "https://hentaicube.net/"}).content)))
+
+    pdf_filename = "{}-{}.pdf".format(name, chapter_name if chapter_name else "%schaps" % len(chapters))
     img_list[0].save(pdf_filename, "PDF", resolution=300.0, save_all=True, append_images=img_list[1:])
     return pdf_filename
 
