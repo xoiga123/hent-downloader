@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" type="text/css" href="{% static 'index/index.css' %}">
+</head>
+<body>
+    <form action="{% url 'index' %}" class="search-bar" method="POST">
+        {% csrf_token %}
+        <input type="search" name="link" required>
+        <button class="search-btn" type="submit">
+            <span>Search</span>
+        </button>
+    </form>
+</body>
+</html>
