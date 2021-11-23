@@ -8,6 +8,7 @@ import re
 import os
 import time
 from threading import Thread
+import gc
 
 
 def download(link):
@@ -29,6 +30,10 @@ def download(link):
         html = scraper.get(link).content
         soup = BeautifulSoup(html, 'html.parser')
         chapters = soup.find_all("li", {"class": "wp-manga-chapter"})
+
+        del html
+        del soup
+        gc.collect()
         img_list = [[] for _ in range(len(chapters))]
         threads = []
         for index, chap in enumerate(chapters[::-1]):
@@ -49,7 +54,12 @@ def crawl_chapter(scraper, link, img_list, index):
     print("crawling", index)
     html = scraper.get(link).content
     soup = BeautifulSoup(html, 'html.parser')
-    for noscript in soup.find_all("noscript"):
+    noscripts = soup.find_all("noscript")
+
+    del html
+    del soup
+    gc.collect()
+    for noscript in noscripts:
         img = noscript.find("img")
         if not img: continue
 
