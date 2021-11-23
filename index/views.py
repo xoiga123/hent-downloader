@@ -41,11 +41,12 @@ def download(link):
 
     img_list_flatten = [item for sublist in img_list for item in sublist]
     pdf_filename = "{}-{}.pdf".format(name, chapter if chapter else "%schaps" % len(chapters))
-    img_list_flatten[0].save(pdf_filename, "PDF", resolution=300.0, save_all=True, append_images=img_list_flatten[1:])
+    img_list_flatten[0].save(pdf_filename, "PDF", resolution=200.0, save_all=True, append_images=img_list_flatten[1:])
     return pdf_filename
 
 
 def crawl_chapter(scraper, link, img_list, index):
+    print("crawling", index)
     html = scraper.get(link).content
     soup = BeautifulSoup(html, 'html.parser')
     for noscript in soup.find_all("noscript"):
@@ -55,6 +56,7 @@ def crawl_chapter(scraper, link, img_list, index):
         link = img["src"]
         img_list[index].append(
             Image.open(BytesIO(scraper.get(link, headers={'referer': "https://hentaicube.net/"}).content)))
+    print("done", index)
 
 
 # Create your views here.
