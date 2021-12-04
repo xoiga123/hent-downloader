@@ -59,11 +59,16 @@ def download(link, queue_stream):
         for process in threads:
             process.join()
 
+    print('before faltten')
     img_list_flatten = [item for sublist in img_list for item in sublist]
+    del img_list
+    gc.collect()
+    print('after delete img_list')
     pdf_filename = "{}-{}.pdf".format(name, chapter if chapter else "%schaps" % len(chapters))
     img_list_flatten[0].save(pdf_filename, "PDF", resolution=200.0, save_all=True, append_images=img_list_flatten[1:])
     del img_list_flatten
     gc.collect()
+    print('after delete flatten')
     with open(pdf_filename, "rb") as pdf_file:
         queue_stream.put(base64.b64encode(pdf_file.read()))
     queue_stream.put(" " + pdf_filename)
