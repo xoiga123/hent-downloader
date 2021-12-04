@@ -7,13 +7,69 @@
     <link rel="stylesheet" type="text/css" href="{% static 'index/index.css' %}">
 </head>
 <body>
-    <form action="{% url 'index' %}" class="search-bar" method="POST">
+    <form id="myForm" action="{% url 'index' %}" class="search-bar" method="POST">
         {% csrf_token %}
         <input type="search" name="link" required>
         <button class="search-btn" type="submit">
             <span>Search</span>
         </button>
     </form>
+    <script>
+        function downloadPDF(pdf, pdf_filename) {
+            const linkSource = `data:application/pdf;base64,${pdf}`;
+            const downloadLink = document.createElement("a");
+            const fileName = pdf_filename;
+            downloadLink.href = linkSource;
+            downloadLink.download = fileName;
+            downloadLink.click();
+        }
+        window.addEventListener( "load", function () {
+          function sendData() {
+            const XHR = new XMLHttpRequest();
+
+            // Bind the FormData object and the form element
+            const FD = new FormData( form );
+
+            // Define what happens on successful data submission
+            XHR.addEventListener( "load", function(event) {
+              console.log('completed');
+              var pdf_base64 = event.target.responseText;
+              pdf_base64 = pdf_base64.trim();
+              pdf_split = pdf_base64.split(" ");
+              downloadPDF(pdf_split[0], pdf_split[1]);
+            } );
+
+            // Streaming
+            function streaming (oEvent) {
+                // console.log(oEvent.target.responseText);
+            }
+            XHR.addEventListener('progress', streaming, false);
+
+
+            // Define what happens in case of error
+            XHR.addEventListener( "error", function( event ) {
+              alert( 'Oops! Something went wrong.' );
+            } );
+
+            // Set up our request
+            url = '{% url "index" %}';
+            XHR.open( "POST", url, true);
+
+            // The data sent is what the user provided in the form
+            XHR.send( FD );
+            }
+
+          // Access the form element...
+          const form = document.getElementById( "myForm" );
+
+          // ...and take over its submit event.
+          form.addEventListener( "submit", function ( event ) {
+            event.preventDefault();
+
+            sendData();
+          } );
+        } );
+    </script>
 
 </body>
 </html>

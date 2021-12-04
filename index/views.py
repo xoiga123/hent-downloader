@@ -1,4 +1,4 @@
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseBadRequest, StreamingHttpResponse
 from django.shortcuts import render
 import cloudscraper
 from bs4 import BeautifulSoup
@@ -9,9 +9,24 @@ import os
 import time
 from threading import Thread
 import gc
+from queue import Queue
+import base64
 
 
-def download(link):
+def stream_generator(queue_stream):
+    while queue_stream.empty():
+        time.sleep(20)
+        print('slept 20')
+        yield ' '  # whitespace because base64 ignores, easily trim
+    pdf_base64 = queue_stream.get()
+    print('got base64')
+    yield pdf_base64
+    pdf_filename = queue_stream.get()
+    print('got name')
+    yield pdf_filename
+
+
+def download(link, queue_stream):
     # Adding Browser / User-Agent Filtering should help ie.
     # will give you only desktop firefox User-Agents on Windows
     scraper = cloudscraper.create_scraper(browser={'browser': 'firefox','platform': 'windows','mobile': False})
@@ -47,7 +62,11 @@ def download(link):
     img_list_flatten = [item for sublist in img_list for item in sublist]
     pdf_filename = "{}-{}.pdf".format(name, chapter if chapter else "%schaps" % len(chapters))
     img_list_flatten[0].save(pdf_filename, "PDF", resolution=200.0, save_all=True, append_images=img_list_flatten[1:])
-    return pdf_filename
+    del img_list_flatten
+    gc.collect()
+    with open(pdf_filename, "rb") as pdf_file:
+        queue_stream.put(base64.b64encode(pdf_file.read()))
+    queue_stream.put(" " + pdf_filename)
 
 
 def crawl_chapter(scraper, link, img_list, index):
@@ -72,12 +91,18 @@ def crawl_chapter(scraper, link, img_list, index):
 # Create your views here.
 def index(request):
     if request.method == "POST":
-        pdf_filename = download(request.POST['link'])
-        with open(pdf_filename, 'rb') as file:
-            response = HttpResponse(file.read(), content_type="application/pdf")
-            response['Content-Disposition'] = 'attachment; filename="{}"'.format(pdf_filename)
-        time.sleep(1)
-        os.remove(pdf_filename)
+        queue_stream = Queue()
+        download_process = Thread(target=download, args=[request.POST['link'], queue_stream])
+        download_process.start()
+        response = StreamingHttpResponse(stream_generator(queue_stream), status=200, content_type='text/event-stream')
         return response
+
+        # pdf_filename = download(request.POST['link'])
+        # with open(pdf_filename, 'rb') as file:
+        #     response = HttpResponse(file.read(), content_type="application/pdf")
+        #     response['Content-Disposition'] = 'attachment; filename="{}"'.format(pdf_filename)
+        # time.sleep(1)
+        # os.remove(pdf_filename)
+        # return response
     else:
         return render(request, 'index/index.html')
