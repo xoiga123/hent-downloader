@@ -100,7 +100,7 @@ def crawl_chapter(scraper, link, img_list, index):
 def index(request):
     if request.method == "POST":
         queue_stream = Queue()
-        _ = request.body
+        str(request.data)
         download_process = Thread(target=download, args=[request.POST['link'], queue_stream])
         download_process.start()
         response = StreamingHttpResponse(stream_generator(queue_stream), status=200, content_type='text/event-stream')
