@@ -22,7 +22,6 @@ def stream_generator(queue_stream):
     pdf_base64 = queue_stream.get()
     print('got base64')
     yield pdf_base64
-    time.sleep(2)
     pdf_filename = queue_stream.get()
     print('got name')
     yield pdf_filename
@@ -76,6 +75,7 @@ def download(link, queue_stream):
                                  append_images=img_list_flatten[i+1:i+50], append=True)
         for img in img_list_flatten[i:i+50]:
             img.close()
+        time.sleep(1)
     del img_list_flatten
     gc.collect()
     print('after delete flatten')
