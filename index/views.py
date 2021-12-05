@@ -17,8 +17,8 @@ from django.views.decorators.csrf import csrf_exempt
 
 def stream_generator(queue_stream):
     while queue_stream.empty():
-        time.sleep(20)
-        print('slept 20')
+        time.sleep(5)
+        print('slept 5')
         yield ' '  # whitespace because base64 ignores, easily trim
     pdf_base64 = queue_stream.get()
     print('got base64')

@@ -1,1 +1,1 @@
-web: gunicorn hent_downloader.wsgi --log-file -
+web: gunicorn hent_downloader.wsgi -k gevent --log-file -
