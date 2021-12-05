@@ -10,7 +10,7 @@ from threading import Thread
 import gc
 from queue import Queue
 import base64
-
+import os
 from django.views.decorators.csrf import csrf_exempt
 
 
@@ -22,6 +22,7 @@ def stream_generator(queue_stream):
     pdf_base64 = queue_stream.get()
     print('got base64')
     yield pdf_base64
+    time.sleep(1)
     pdf_filename = queue_stream.get()
     print('got name')
     yield pdf_filename
@@ -60,11 +61,9 @@ def download(link, queue_stream):
         for process in threads:
             process.join()
 
-    print('before faltten')
     img_list_flatten = [item for sublist in img_list for item in sublist]
     del img_list
     gc.collect()
-    print('after delete img_list')
     pdf_filename = "{}-{}.pdf".format(name, chapter if chapter else "%schaps" % len(chapters))
     # img_list_flatten[0].save(pdf_filename, "PDF", resolution=200.0, save_all=True, append_images=img_list_flatten[1:])
     img_list_flatten[0].save(pdf_filename, "PDF", resolution=200.0)
@@ -75,13 +74,14 @@ def download(link, queue_stream):
                                  append_images=img_list_flatten[i+1:i+50], append=True)
         for img in img_list_flatten[i:i+50]:
             img.close()
-        time.sleep(1)
+        time.sleep(0)
     del img_list_flatten
     gc.collect()
     print('after delete flatten')
     with open(pdf_filename, "rb") as pdf_file:
         queue_stream.put(base64.b64encode(pdf_file.read()))
     queue_stream.put(" " + pdf_filename)
+    os.remove(pdf_filename)
 
 
 def crawl_chapter(scraper, link, img_list, index):
