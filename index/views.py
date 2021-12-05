@@ -5,7 +5,6 @@ from bs4 import BeautifulSoup
 from PIL import Image
 from io import BytesIO
 import re
-import os
 import time
 from threading import Thread
 import gc
@@ -71,9 +70,12 @@ def download(link, queue_stream):
     # img_list_flatten[0].save(pdf_filename, "PDF", resolution=200.0, save_all=True, append_images=img_list_flatten[1:])
     img_list_flatten[0].save(pdf_filename, "PDF", resolution=200.0)
     img_list_flatten[0].close()
-    for img in img_list_flatten[1:]:
-        img.save(pdf_filename, "PDF", resolution=200.0, append=True)
-        img.close()
+    for i in range(1, len(img_list_flatten), 50):
+        print(i)
+        img_list_flatten[i].save(pdf_filename, "PDF", resolution=200.0, save_all=True,
+                                 append_images=img_list_flatten[i+1:i+50], append=True)
+        for img in img_list_flatten[i:i+50]:
+            img.close()
     del img_list_flatten
     gc.collect()
     print('after delete flatten')
