@@ -65,7 +65,12 @@ def download(link, queue_stream):
     gc.collect()
     print('after delete img_list')
     pdf_filename = "{}-{}.pdf".format(name, chapter if chapter else "%schaps" % len(chapters))
-    img_list_flatten[0].save(pdf_filename, "PDF", resolution=200.0, save_all=True, append_images=img_list_flatten[1:])
+    # img_list_flatten[0].save(pdf_filename, "PDF", resolution=200.0, save_all=True, append_images=img_list_flatten[1:])
+    img_list_flatten[0].save(pdf_filename, "PDF", resolution=200.0)
+    img_list_flatten[0].close()
+    for img in img_list_flatten[1:]:
+        img.save(pdf_filename, "PDF", resolution=200.0, append=True)
+        img.close()
     del img_list_flatten
     gc.collect()
     print('after delete flatten')
@@ -78,16 +83,14 @@ def crawl_chapter(scraper, link, img_list, index):
     print("crawling", index)
     html = scraper.get(link).content
     soup = BeautifulSoup(html, 'html.parser')
-    noscripts = soup.find_all("noscript")
+    imgs = soup.find("div", {"class": "text-left"}).find("div").find_all("img")
 
     del html
     del soup
     gc.collect()
-    for noscript in noscripts:
-        img = noscript.find("img")
-        if not img: continue
-
+    for img in imgs:
         link = img["src"]
+        print(link)
         img_list[index].append(
             Image.open(BytesIO(scraper.get(link, headers={'referer': "https://hentaicube.net/"}).content)))
     print("done", index)
