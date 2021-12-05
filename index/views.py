@@ -12,6 +12,8 @@ import gc
 from queue import Queue
 import base64
 
+from django.views.decorators.csrf import csrf_exempt
+
 
 def stream_generator(queue_stream):
     while queue_stream.empty():
@@ -97,6 +99,7 @@ def crawl_chapter(scraper, link, img_list, index):
 
 
 # Create your views here.
+@csrf_exempt
 def index(request):
     if request.method == "POST":
         queue_stream = Queue()
