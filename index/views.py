@@ -23,6 +23,7 @@ def stream_generator(queue_stream):
     pdf_base64 = queue_stream.get()
     print('got base64')
     yield pdf_base64
+    time.sleep(2)
     pdf_filename = queue_stream.get()
     print('got name')
     yield pdf_filename
@@ -92,7 +93,7 @@ def crawl_chapter(scraper, link, img_list, index):
     gc.collect()
     for img in imgs:
         link = img["src"]
-        print(link)
+        # print(link)
         img_list[index].append(
             Image.open(BytesIO(scraper.get(link, headers={'referer': "https://hentaicube.net/"}).content)))
     print("done", index)
