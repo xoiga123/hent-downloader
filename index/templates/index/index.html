@@ -68,12 +68,12 @@
 
             // Define what happens on successful data submission
             XHR.addEventListener( "load", function(event) {
-              cat.style.display = "none";
               console.log('completed');
               var pdf_base64 = event.target.responseText;
               pdf_base64 = pdf_base64.trim();
               pdf_split = pdf_base64.split(" ");
               downloadPDF(pdf_split[0], pdf_split[1]);
+              cat.style.display = "none";
             } );
 
             // Streaming
@@ -85,7 +85,7 @@
 
             // Define what happens in case of error
             XHR.addEventListener( "error", function( event ) {
-              alert( 'Oops! Something went wrong.' );
+              alert( `{event} \n lỗi r đmm dùng phá vừa thôi \n chụp màn hình gửi bố m fix`);
             } );
 
             // Set up our request

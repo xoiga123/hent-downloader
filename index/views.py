@@ -74,7 +74,7 @@ def download(link, queue_stream):
                                  append_images=img_list_flatten[i+1:i+50], append=True)
         for img in img_list_flatten[i:i+50]:
             img.close()
-        time.sleep(0)
+        time.sleep(1)
     del img_list_flatten
     gc.collect()
     print('after delete flatten')
