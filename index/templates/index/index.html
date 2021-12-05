@@ -3,7 +3,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>Pêđêép</title>
+    <link rel="shortcut icon" href="{%  static 'index/favicon.ico' %}">
     <link rel="stylesheet" type="text/css" href="{% static 'index/index.css' %}">
 </head>
 <body>
@@ -14,6 +15,38 @@
             <span>Search</span>
         </button>
     </form>
+    <div style="display: none;" class="cat">
+        <div class="cat__segment"></div>
+        <div class="cat__segment"></div>
+        <div class="cat__segment"></div>
+        <div class="cat__segment"></div>
+        <div class="cat__segment"></div>
+        <div class="cat__segment"></div>
+        <div class="cat__segment"></div>
+        <div class="cat__segment"></div>
+        <div class="cat__segment"></div>
+        <div class="cat__segment"></div>
+        <div class="cat__segment"></div>
+        <div class="cat__segment"></div>
+        <div class="cat__segment"></div>
+        <div class="cat__segment"></div>
+        <div class="cat__segment"></div>
+        <div class="cat__segment"></div>
+        <div class="cat__segment"></div>
+        <div class="cat__segment"></div>
+        <div class="cat__segment"></div>
+        <div class="cat__segment"></div>
+        <div class="cat__segment"></div>
+        <div class="cat__segment"></div>
+        <div class="cat__segment"></div>
+        <div class="cat__segment"></div>
+        <div class="cat__segment"></div>
+        <div class="cat__segment"></div>
+        <div class="cat__segment"></div>
+        <div class="cat__segment"></div>
+        <div class="cat__segment"></div>
+        <div class="cat__segment"></div>
+    </div>
     <script>
         function downloadPDF(pdf, pdf_filename) {
             const linkSource = `data:application/pdf;base64,${pdf}`;
@@ -24,7 +57,10 @@
             downloadLink.click();
         }
         window.addEventListener( "load", function () {
+           var cat = document.querySelector(".cat");
+
           function sendData() {
+            cat.style.display = "";
             const XHR = new XMLHttpRequest();
 
             // Bind the FormData object and the form element
@@ -32,6 +68,7 @@
 
             // Define what happens on successful data submission
             XHR.addEventListener( "load", function(event) {
+              cat.style.display = "none";
               console.log('completed');
               var pdf_base64 = event.target.responseText;
               pdf_base64 = pdf_base64.trim();
