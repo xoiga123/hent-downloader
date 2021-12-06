@@ -44,11 +44,12 @@ def download(link, queue_stream):
         try:
             # single
             name = re.search("xem-truyen-(.*?).html", link).group(1)
-            chapter = re.search("oneshot")
+            chapter = re.search("oneshot", link)
             if not chapter:
                 chapter = re.search("(chap-.*?).html", link).group(1)
             else:
                 chapter = "oneshot"
+            name = name.replace("-{}".format(chapter), "")
         except:
             # multi
             name = re.search("doc-truyen-(.*?).html", link).group(1)
@@ -105,7 +106,7 @@ def download(link, queue_stream):
 
 def crawl_chapter(scraper, link, img_list, index, site):
     print("crawling", index)
-    if not site.startswith("http"):
+    if not link.startswith("http"):
         link = "https://{}".format(site) + link
     html = scraper.get(link).content
     soup = BeautifulSoup(html, 'html.parser')
@@ -122,7 +123,7 @@ def crawl_chapter(scraper, link, img_list, index, site):
         link = img["src"]
         # print(link)
         img_list[index].append(
-            Image.open(BytesIO(scraper.get(link, headers={'referer': referer}).content)))
+            Image.open(BytesIO(scraper.get(link, headers={'referer': referer}).content)).convert("RGB"))
     print("done", index)
 
 
