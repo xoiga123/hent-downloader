@@ -32,7 +32,7 @@ def download(link, queue_stream):
     # Adding Browser / User-Agent Filtering should help ie.
     # will give you only desktop firefox User-Agents on Windows
     scraper = cloudscraper.create_scraper(browser={'browser': 'firefox','platform': 'windows','mobile': False})
-    site = re.search("/{0,2}([a-zA-Z0-9.]*?)/").group(1)
+    site = re.search("/{0,2}([a-zA-Z0-9.]*?)/", link).group(1)
 
     if site.startswith("hentaicube"):
         name = re.search("manga/(.*?)/", link).group(1)
@@ -43,15 +43,15 @@ def download(link, queue_stream):
     elif site.startswith("hentaivn"):
         try:
             # single
-            name = re.search("xem-truyen-(.*?).html").group(1)
+            name = re.search("xem-truyen-(.*?).html", link).group(1)
             chapter = re.search("oneshot")
             if not chapter:
-                chapter = re.search("(chap-.*?).html").group(1)
+                chapter = re.search("(chap-.*?).html", link).group(1)
             else:
                 chapter = "oneshot"
         except:
             # multi
-            name = re.search("doc-truyen-(.*?).html").group(1)
+            name = re.search("doc-truyen-(.*?).html", link).group(1)
             chapter = None
 
     if chapter:
@@ -106,7 +106,7 @@ def download(link, queue_stream):
 def crawl_chapter(scraper, link, img_list, index, site):
     print("crawling", index)
     if not site.startswith("http"):
-        link = "https://{}".formta(site) + link
+        link = "https://{}".format(site) + link
     html = scraper.get(link).content
     soup = BeautifulSoup(html, 'html.parser')
     if site.startswith("hentaicube"):
