@@ -60,6 +60,7 @@
            var cat = document.querySelector(".cat");
 
           function sendData() {
+            form.alreadySending = true;
             cat.style.display = "";
             const XHR = new XMLHttpRequest();
 
@@ -73,6 +74,7 @@
               pdf_base64 = pdf_base64.trim();
               pdf_split = pdf_base64.split(" ");
               downloadPDF(pdf_split[0], pdf_split[1]);
+              form.alreadySending = false;
               cat.style.display = "none";
             } );
 
@@ -98,12 +100,14 @@
 
           // Access the form element...
           const form = document.getElementById( "myForm" );
+          form.alreadySending = false;
 
           // ...and take over its submit event.
           form.addEventListener( "submit", function ( event ) {
             event.preventDefault();
-
-            sendData();
+            if (!event.currentTarget.alreadySending){
+                sendData();
+            }
           } );
         } );
     </script>

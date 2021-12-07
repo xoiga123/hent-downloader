@@ -12,6 +12,7 @@ from queue import Queue
 import base64
 import os
 from django.views.decorators.csrf import csrf_exempt
+from django.templatetags.static import static
 
 
 def stream_generator(queue_stream):
@@ -29,6 +30,7 @@ def stream_generator(queue_stream):
 
 
 def download(link, queue_stream):
+    print(link)
     # Adding Browser / User-Agent Filtering should help ie.
     # will give you only desktop firefox User-Agents on Windows
     scraper = cloudscraper.create_scraper(browser={'browser': 'firefox','platform': 'windows','mobile': False})
@@ -55,10 +57,13 @@ def download(link, queue_stream):
             name = re.search("doc-truyen-(.*?).html", link).group(1)
             chapter = None
 
+    # load missing image
+    anh_die = Image.open(static('index/anh_die.jpg')).convert("RGB")
+
     if chapter:
         # single download
         img_list = [[]]
-        crawl_chapter(scraper, link, img_list, 0, site)
+        crawl_chapter(scraper, link, img_list, 0, site, anh_die)
     else:
         # multi download
         html = scraper.get(link).content
@@ -75,7 +80,7 @@ def download(link, queue_stream):
         threads = []
         for index, chap in enumerate(chapters[::-1]):
             link = chap.find('a')['href']
-            process = Thread(target=crawl_chapter, args=[scraper, link, img_list, index, site])
+            process = Thread(target=crawl_chapter, args=[scraper, link, img_list, index, site, anh_die])
             process.start()
             threads.append(process)
         for process in threads:
@@ -88,11 +93,11 @@ def download(link, queue_stream):
     # img_list_flatten[0].save(pdf_filename, "PDF", resolution=200.0, save_all=True, append_images=img_list_flatten[1:])
     img_list_flatten[0].save(pdf_filename, "PDF", resolution=200.0)
     img_list_flatten[0].close()
-    for i in range(1, len(img_list_flatten), 50):
+    for i in range(1, len(img_list_flatten), 30):
         print(i)
         img_list_flatten[i].save(pdf_filename, "PDF", resolution=200.0, save_all=True,
-                                 append_images=img_list_flatten[i+1:i+50], append=True)
-        for img in img_list_flatten[i:i+50]:
+                                 append_images=img_list_flatten[i+1:i+30], append=True)
+        for img in img_list_flatten[i:i+30]:
             img.close()
         time.sleep(1)
     del img_list_flatten
@@ -104,7 +109,7 @@ def download(link, queue_stream):
     os.remove(pdf_filename)
 
 
-def crawl_chapter(scraper, link, img_list, index, site):
+def crawl_chapter(scraper, link, img_list, index, site, anh_die):
     print("crawling", index)
     if not link.startswith("http"):
         link = "https://{}".format(site) + link
@@ -122,8 +127,11 @@ def crawl_chapter(scraper, link, img_list, index, site):
     for img in imgs:
         link = img["src"]
         # print(link)
-        img_list[index].append(
-            Image.open(BytesIO(scraper.get(link, headers={'referer': referer}).content)).convert("RGB"))
+        try:
+            img_list[index].append(
+                Image.open(BytesIO(scraper.get(link, headers={'referer': referer}).content)).convert("RGB"))
+        except:
+            img_list[index].append(anh_die)
     print("done", index)
 
 
@@ -137,13 +145,5 @@ def index(request):
         download_process.start()
         response = StreamingHttpResponse(stream_generator(queue_stream), status=200, content_type='text/event-stream')
         return response
-
-        # pdf_filename = download(request.POST['link'])
-        # with open(pdf_filename, 'rb') as file:
-        #     response = HttpResponse(file.read(), content_type="application/pdf")
-        #     response['Content-Disposition'] = 'attachment; filename="{}"'.format(pdf_filename)
-        # time.sleep(1)
-        # os.remove(pdf_filename)
-        # return response
     else:
         return render(request, 'index/index.html')
