@@ -75,6 +75,7 @@ def download(link, queue_stream, fast_mode):
                                     append_images=img_list[0][1:], append=True)
             for img in img_list[0]:
                 img.close()
+            img_list[0] = []
             time.sleep(1)
             if not remain:
                 break
@@ -148,6 +149,7 @@ def download(link, queue_stream, fast_mode):
                                                 append_images=img_list[index][1:], append=True)
                     for img in img_list[index]:
                         img.close()
+                    img_list[index] = []
                     time.sleep(1)
                     if not remain:
                         break
@@ -159,8 +161,6 @@ def download(link, queue_stream, fast_mode):
             queue_stream.put(" " + pdf_filename)
             os.remove(pdf_filename)
             return
-
-
 
 
 def crawl_chapter(scraper, link, img_list, index, site, anh_die, remain):
@@ -179,13 +179,14 @@ def crawl_chapter(scraper, link, img_list, index, site, anh_die, remain):
         del soup
         gc.collect()
     else:
+        print('remaining {} pages', len(remain))
         imgs = remain
 
     referer = "https://{}/".format(site)
 
     if len(imgs) > 50:
-        imgs = imgs[0:50]
         remain = imgs[50:]
+        imgs = imgs[0:50]
     else:
         remain = None
 
