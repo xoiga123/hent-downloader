@@ -58,7 +58,7 @@ def download(link, queue_stream):
             chapter = None
 
     # load missing image
-    anh_die = Image.open(static('index/anh_die.jpg')).convert("RGB")
+    anh_die = Image.open(os.path.join(os.getcwd(), 'index/static/index/anh_die.jpg')).convert("RGB")
 
     if chapter:
         # single download
