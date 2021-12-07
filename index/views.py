@@ -179,7 +179,7 @@ def crawl_chapter(scraper, link, img_list, index, site, anh_die, remain):
         del soup
         gc.collect()
     else:
-        print('remaining {} pages', len(remain))
+        print('remaining {} pages'.format(len(remain)))
         imgs = remain
 
     referer = "https://{}/".format(site)
