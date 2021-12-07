@@ -61,9 +61,31 @@ def download(link, queue_stream, fast_mode):
     anh_die = Image.open(os.path.join(os.getcwd(), 'index/static/index/anh_die.jpg')).convert("RGB")
 
     if chapter:
-        # single download
+        # single download, save each 50 in chapter
         img_list = [[]]
-        crawl_chapter(scraper, link, img_list, 0, site, anh_die)
+        pdf_filename = "{}-{}.pdf".format(name, chapter)
+        remain = None
+        while True:
+            remain = crawl_chapter(scraper, link, img_list, 0, site, anh_die, remain)
+            if not os.path.exists(pdf_filename):
+                img_list[0][0].save(pdf_filename, "PDF", resolution=200.0, save_all=True,
+                                    append_images=img_list[0][1:])
+            else:
+                img_list[0][0].save(pdf_filename, "PDF", resolution=200.0, save_all=True,
+                                    append_images=img_list[0][1:], append=True)
+            for img in img_list[0]:
+                img.close()
+            time.sleep(1)
+            if not remain:
+                break
+        del img_list
+        gc.collect()
+        print("single download done")
+        with open(pdf_filename, "rb") as pdf_file:
+            queue_stream.put(base64.b64encode(pdf_file.read()))
+        queue_stream.put(" " + pdf_filename)
+        os.remove(pdf_filename)
+        return
     else:
         # multi download
         html = scraper.get(link).content
@@ -79,31 +101,56 @@ def download(link, queue_stream, fast_mode):
         img_list = [[] for _ in range(len(chapters))]
         threads = []
         if fast_mode:
-            # download all chapters first
+            # download all chapters first, then save all
             print("fast mode")
             for index, chap in enumerate(chapters[::-1]):
                 link = chap.find('a')['href']
-                process = Thread(target=crawl_chapter, args=[scraper, link, img_list, index, site, anh_die])
+                process = Thread(target=crawl_chapter, args=[scraper, link, img_list, index, site, anh_die, None])
                 process.start()
                 threads.append(process)
             for process in threads:
                 process.join()
-        else:
-            # download each chapter then delete from memory
-            print("slow mode")
-            pdf_filename = "{}-{}.pdf".format(name, chapter if chapter else "%schaps" % len(chapters))
-            for index, chap in enumerate(chapters[::-1]):
-                link = chap.find('a')['href']
-                crawl_chapter(scraper, link, img_list, index, site, anh_die)
-                if index == 0:
-                    img_list[index][0].save(pdf_filename, "PDF", resolution=200.0, save_all=True,
-                                            append_images=img_list[index][1:])
-                else:
-                    img_list[index][0].save(pdf_filename, "PDF", resolution=200.0, save_all=True,
-                                            append_images=img_list[index][1:], append=True)
-                for img in img_list[index]:
+
+            img_list_flatten = [item for sublist in img_list for item in sublist]
+            del img_list
+            gc.collect()
+            pdf_filename = "{}-{}.pdf".format(name, "%schaps" % len(chapters))
+            img_list_flatten[0].save(pdf_filename, "PDF", resolution=200.0)
+            img_list_flatten[0].close()
+            for i in range(1, len(img_list_flatten), 50):
+                print(i)
+                img_list_flatten[i].save(pdf_filename, "PDF", resolution=200.0, save_all=True,
+                                         append_images=img_list_flatten[i + 1:i + 50], append=True)
+                for img in img_list_flatten[i:i + 50]:
                     img.close()
                 time.sleep(1)
+            del img_list_flatten
+            gc.collect()
+            print('after delete flatten')
+            with open(pdf_filename, "rb") as pdf_file:
+                queue_stream.put(base64.b64encode(pdf_file.read()))
+            queue_stream.put(" " + pdf_filename)
+            os.remove(pdf_filename)
+        else:
+            # download each chapter then save batch 50 in chapter
+            print("slow mode")
+            pdf_filename = "{}-{}.pdf".format(name, "%schaps" % len(chapters))
+            for index, chap in enumerate(chapters[::-1]):
+                link = chap.find('a')['href']
+                remain = None
+                while True:
+                    remain = crawl_chapter(scraper, link, img_list, index, site, anh_die, remain)
+                    if not os.path.exists(pdf_filename):
+                        img_list[index][0].save(pdf_filename, "PDF", resolution=200.0, save_all=True,
+                                                append_images=img_list[index][1:])
+                    else:
+                        img_list[index][0].save(pdf_filename, "PDF", resolution=200.0, save_all=True,
+                                                append_images=img_list[index][1:], append=True)
+                    for img in img_list[index]:
+                        img.close()
+                    time.sleep(1)
+                    if not remain:
+                        break
             del img_list
             gc.collect()
             print("slow mode done")
@@ -113,44 +160,35 @@ def download(link, queue_stream, fast_mode):
             os.remove(pdf_filename)
             return
 
-    img_list_flatten = [item for sublist in img_list for item in sublist]
-    del img_list
-    gc.collect()
-    pdf_filename = "{}-{}.pdf".format(name, chapter if chapter else "%schaps" % len(chapters))
-    # img_list_flatten[0].save(pdf_filename, "PDF", resolution=200.0, save_all=True, append_images=img_list_flatten[1:])
-    img_list_flatten[0].save(pdf_filename, "PDF", resolution=200.0)
-    img_list_flatten[0].close()
-    for i in range(1, len(img_list_flatten), 50):
-        print(i)
-        img_list_flatten[i].save(pdf_filename, "PDF", resolution=200.0, save_all=True,
-                                 append_images=img_list_flatten[i+1:i+50], append=True)
-        for img in img_list_flatten[i:i+50]:
-            img.close()
-        time.sleep(1)
-    del img_list_flatten
-    gc.collect()
-    print('after delete flatten')
-    with open(pdf_filename, "rb") as pdf_file:
-        queue_stream.put(base64.b64encode(pdf_file.read()))
-    queue_stream.put(" " + pdf_filename)
-    os.remove(pdf_filename)
 
 
-def crawl_chapter(scraper, link, img_list, index, site, anh_die):
-    print("crawling", index)
-    if not link.startswith("http"):
-        link = "https://{}".format(site) + link
-    html = scraper.get(link).content
-    soup = BeautifulSoup(html, 'html.parser')
-    if site.startswith("hentaicube"):
-        imgs = soup.find("div", {"class": "text-left"}).find("div").find_all("img")
-    elif site.startswith("hentaivn"):
-        imgs = soup.find("div", {"id": "image"}).find_all("img")
+
+def crawl_chapter(scraper, link, img_list, index, site, anh_die, remain):
+    if not remain:
+        print("crawling", index)
+        if not link.startswith("http"):
+            link = "https://{}".format(site) + link
+        html = scraper.get(link).content
+        soup = BeautifulSoup(html, 'html.parser')
+        if site.startswith("hentaicube"):
+            imgs = soup.find("div", {"class": "text-left"}).find("div").find_all("img")
+        elif site.startswith("hentaivn"):
+            imgs = soup.find("div", {"id": "image"}).find_all("img")
+
+        del html
+        del soup
+        gc.collect()
+    else:
+        imgs = remain
+
     referer = "https://{}/".format(site)
 
-    del html
-    del soup
-    gc.collect()
+    if len(imgs) > 50:
+        imgs = imgs[0:50]
+        remain = imgs[50:]
+    else:
+        remain = None
+
     for img in imgs:
         link = img["src"]
         # print(link)
@@ -160,6 +198,9 @@ def crawl_chapter(scraper, link, img_list, index, site, anh_die):
         except:
             img_list[index].append(anh_die)
     print("done", index)
+    return remain
+
+
 
 
 # Create your views here.
