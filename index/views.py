@@ -78,7 +78,10 @@ def download(link, queue_stream, fast_mode):
             img_list[0] = []
             time.sleep(1)
             if not remain:
+                print('no remain, break')
                 break
+            else:
+                print('remain, continue while')
         del img_list
         gc.collect()
         print("single download done")
