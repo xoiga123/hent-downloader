@@ -93,11 +93,11 @@ def download(link, queue_stream):
     # img_list_flatten[0].save(pdf_filename, "PDF", resolution=200.0, save_all=True, append_images=img_list_flatten[1:])
     img_list_flatten[0].save(pdf_filename, "PDF", resolution=200.0)
     img_list_flatten[0].close()
-    for i in range(1, len(img_list_flatten), 30):
+    for i in range(1, len(img_list_flatten), 5):
         print(i)
         img_list_flatten[i].save(pdf_filename, "PDF", resolution=200.0, save_all=True,
-                                 append_images=img_list_flatten[i+1:i+30], append=True)
-        for img in img_list_flatten[i:i+30]:
+                                 append_images=img_list_flatten[i+1:i+5], append=True)
+        for img in img_list_flatten[i:i+5]:
             img.close()
         time.sleep(1)
     del img_list_flatten
