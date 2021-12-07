@@ -109,7 +109,7 @@ def download(link, queue_stream, fast_mode):
             print("fast mode")
             for index, chap in enumerate(chapters[::-1]):
                 link = chap.find('a')['href']
-                process = Thread(target=crawl_chapter, args=[scraper, link, img_list, index, site, anh_die, None])
+                process = Thread(target=crawl_chapter, args=[scraper, link, img_list, index, site, anh_die, -1])
                 process.start()
                 threads.append(process)
             for process in threads:
@@ -121,11 +121,11 @@ def download(link, queue_stream, fast_mode):
             pdf_filename = "{}-{}.pdf".format(name, "%schaps" % len(chapters))
             img_list_flatten[0].save(pdf_filename, "PDF", resolution=200.0)
             img_list_flatten[0].close()
-            for i in range(1, len(img_list_flatten), 50):
+            for i in range(1, len(img_list_flatten), 30):
                 print(i)
                 img_list_flatten[i].save(pdf_filename, "PDF", resolution=200.0, save_all=True,
-                                         append_images=img_list_flatten[i + 1:i + 50], append=True)
-                for img in img_list_flatten[i:i + 50]:
+                                         append_images=img_list_flatten[i + 1:i + 30], append=True)
+                for img in img_list_flatten[i:i + 30]:
                     img.close()
                 time.sleep(1)
             del img_list_flatten
@@ -167,7 +167,7 @@ def download(link, queue_stream, fast_mode):
 
 
 def crawl_chapter(scraper, link, img_list, index, site, anh_die, remain):
-    if not remain:
+    if not remain or remain == -1:
         print("crawling", index)
         if not link.startswith("http"):
             link = "https://{}".format(site) + link
@@ -187,22 +187,38 @@ def crawl_chapter(scraper, link, img_list, index, site, anh_die, remain):
 
     referer = "https://{}/".format(site)
 
-    if len(imgs) > 30:
+    if len(imgs) > 30 and remain != -1:
         remain = imgs[30:]
         imgs = imgs[0:30]
     else:
         remain = None
 
-    for img in imgs:
-        link = img["src"]
+    img_threads = []
+    img_list[index] = [None] * len(imgs)
+    for img_index, img in enumerate(imgs):
+        img_link = img["src"]
         # print(link)
-        try:
-            img_list[index].append(
-                Image.open(BytesIO(scraper.get(link, headers={'referer': referer}).content)).convert("RGB"))
-        except:
-            img_list[index].append(anh_die)
+        # try:
+        #     img_list[index].append(
+        #         Image.open(BytesIO(scraper.get(link, headers={'referer': referer}).content)).convert("RGB"))
+        # except:
+        #     img_list[index].append(anh_die)
+        img_process = Thread(target=crawl_image, args=[scraper, img_link, img_list, index, img_index, referer, anh_die])
+        img_process.start()
+        img_threads.append(img_process)
+    for img_process in img_threads:
+        img_process.join()
+    img_list[index] = [x for x in img_list[index] if x]
     print("done", index)
     return remain
+
+
+def crawl_image(scraper, link, img_list, index, img_index, referer, anh_die):
+    print('thread for img', img_index)
+    try:
+        img_list[index][img_index] = Image.open(BytesIO(scraper.get(link, headers={'referer': referer}).content)).convert("RGB")
+    except:
+        img_list[index][img_index] = anh_die
 
 
 # Create your views here.
