@@ -187,9 +187,9 @@ def crawl_chapter(scraper, link, img_list, index, site, anh_die, remain):
 
     referer = "https://{}/".format(site)
 
-    if len(imgs) > 50:
-        remain = imgs[50:]
-        imgs = imgs[0:50]
+    if len(imgs) > 30:
+        remain = imgs[30:]
+        imgs = imgs[0:30]
     else:
         remain = None
 
@@ -203,8 +203,6 @@ def crawl_chapter(scraper, link, img_list, index, site, anh_die, remain):
             img_list[index].append(anh_die)
     print("done", index)
     return remain
-
-
 
 
 # Create your views here.
