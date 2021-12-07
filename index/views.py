@@ -29,7 +29,7 @@ def stream_generator(queue_stream):
     yield pdf_filename
 
 
-def download(link, queue_stream):
+def download(link, queue_stream, fast_mode):
     print(link)
     # Adding Browser / User-Agent Filtering should help ie.
     # will give you only desktop firefox User-Agents on Windows
@@ -78,13 +78,40 @@ def download(link, queue_stream):
         gc.collect()
         img_list = [[] for _ in range(len(chapters))]
         threads = []
-        for index, chap in enumerate(chapters[::-1]):
-            link = chap.find('a')['href']
-            process = Thread(target=crawl_chapter, args=[scraper, link, img_list, index, site, anh_die])
-            process.start()
-            threads.append(process)
-        for process in threads:
-            process.join()
+        if fast_mode:
+            # download all chapters first
+            print("fast mode")
+            for index, chap in enumerate(chapters[::-1]):
+                link = chap.find('a')['href']
+                process = Thread(target=crawl_chapter, args=[scraper, link, img_list, index, site, anh_die])
+                process.start()
+                threads.append(process)
+            for process in threads:
+                process.join()
+        else:
+            # download each chapter then delete from memory
+            print("slow mode")
+            pdf_filename = "{}-{}.pdf".format(name, chapter if chapter else "%schaps" % len(chapters))
+            for index, chap in enumerate(chapters[::-1]):
+                link = chap.find('a')['href']
+                crawl_chapter(scraper, link, img_list, index, site, anh_die)
+                if index == 0:
+                    img_list[index][0].save(pdf_filename, "PDF", resolution=200.0, save_all=True,
+                                            append_images=img_list[index][1:])
+                else:
+                    img_list[index][0].save(pdf_filename, "PDF", resolution=200.0, save_all=True,
+                                            append_images=img_list[index][1:], append=True)
+                for img in img_list[index]:
+                    img.close()
+                time.sleep(1)
+            del img_list
+            gc.collect()
+            print("slow mode done")
+            with open(pdf_filename, "rb") as pdf_file:
+                queue_stream.put(base64.b64encode(pdf_file.read()))
+            queue_stream.put(" " + pdf_filename)
+            os.remove(pdf_filename)
+            return
 
     img_list_flatten = [item for sublist in img_list for item in sublist]
     del img_list
@@ -93,11 +120,11 @@ def download(link, queue_stream):
     # img_list_flatten[0].save(pdf_filename, "PDF", resolution=200.0, save_all=True, append_images=img_list_flatten[1:])
     img_list_flatten[0].save(pdf_filename, "PDF", resolution=200.0)
     img_list_flatten[0].close()
-    for i in range(1, len(img_list_flatten), 5):
+    for i in range(1, len(img_list_flatten), 50):
         print(i)
         img_list_flatten[i].save(pdf_filename, "PDF", resolution=200.0, save_all=True,
-                                 append_images=img_list_flatten[i+1:i+5], append=True)
-        for img in img_list_flatten[i:i+5]:
+                                 append_images=img_list_flatten[i+1:i+50], append=True)
+        for img in img_list_flatten[i:i+50]:
             img.close()
         time.sleep(1)
     del img_list_flatten
@@ -141,7 +168,8 @@ def index(request):
     if request.method == "POST":
         queue_stream = Queue()
         _ = request.body
-        download_process = Thread(target=download, args=[request.POST['link'], queue_stream])
+        fast_mode = True if request.POST['fastMode'] == '1' else False
+        download_process = Thread(target=download, args=[request.POST['link'], queue_stream, fast_mode])
         download_process.start()
         response = StreamingHttpResponse(stream_generator(queue_stream), status=200, content_type='text/event-stream')
         return response

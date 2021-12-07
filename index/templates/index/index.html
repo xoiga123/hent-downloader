@@ -15,6 +15,22 @@
             <span>Search</span>
         </button>
     </form>
+
+    <div class="dog-codepen">
+        <div class="name">Tải nhanh (mặc định)</div>
+        <div class="toggle dog-rollover">
+            <input id="doggo" type="checkbox" checked/><label class="toggle-item" for="doggo">
+                <div class="dog">
+                    <div class="ear"></div>
+                    <div class="ear right"></div>
+                    <div class="face">
+                        <div class="eyes"></div>
+                        <div class="mouth"></div>
+                    </div>
+                </div>
+            </label></div>
+    </div>
+
     <div style="display: none;" class="cat">
         <div class="cat__segment"></div>
         <div class="cat__segment"></div>
@@ -57,7 +73,8 @@
             downloadLink.click();
         }
         window.addEventListener( "load", function () {
-           var cat = document.querySelector(".cat");
+           const cat = document.querySelector(".cat");
+           const dog = document.getElementById("doggo");
 
           function sendData() {
             form.alreadySending = true;
@@ -66,6 +83,7 @@
 
             // Bind the FormData object and the form element
             const FD = new FormData( form );
+            FD.set("fastMode", dog.checked ? "1" : "0");
 
             // Define what happens on successful data submission
             XHR.addEventListener( "load", function(event) {
@@ -87,7 +105,7 @@
 
             // Define what happens in case of error
             XHR.addEventListener( "error", function( event ) {
-              alert( `${event}\nlỗi r đmm dùng phá vừa thôi\nchụp màn hình gửi bố m fix`);
+              alert("Bộ này dở quá, bắt buộc phải tải chậm.\nThời gian tải chậm = Số chương * thời gian tải nhanh.\nTải chậm ko đc nữa thì gọi đầu bố m fix :)");
             } );
 
             // Set up our request
