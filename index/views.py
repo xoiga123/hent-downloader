@@ -144,6 +144,7 @@ def download(link, queue_stream, fast_mode):
                 remain = None
                 while True:
                     remain = crawl_chapter(scraper, link, img_list, index, site, anh_die, remain)
+                    time.sleep(1)
                     if not os.path.exists(pdf_filename):
                         img_list[index][0].save(pdf_filename, "PDF", resolution=200.0, save_all=True,
                                                 append_images=img_list[index][1:])
