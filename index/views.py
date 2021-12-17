@@ -215,7 +215,6 @@ def crawl_chapter(scraper, link, img_list, index, site, anh_die, remain):
 
 
 def crawl_image(scraper, link, img_list, index, img_index, referer, anh_die):
-    print('thread for img', img_index)
     try:
         img_list[index][img_index] = Image.open(BytesIO(scraper.get(link, headers={'referer': referer}).content)).convert("RGB")
     except:
